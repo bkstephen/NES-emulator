@@ -1,0 +1,5 @@
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.csprojAssemblyReference.cache
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.AssemblyInfoInputs.cache
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.AssemblyInfo.cs
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.csproj.CoreCompileInputs.cache
