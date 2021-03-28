@@ -57,9 +57,77 @@ public abstract class olc6502 : Registers, ICpuOpCodes, ICpuAddressingModes
 		return Task.CompletedTask;
 	}
 
-	public virtual Task Reset() => Task.CompletedTask;
-	public virtual Task InteruptRequestSignal() => Task.CompletedTask;
-	public virtual Task NonMaskableInteruptRequestSignal() => Task.CompletedTask;
+	public virtual Task Reset()
+	{
+		a = 0;
+		x = 0;
+		y = 0;
+		stackPointer = 0xFD;
+		status = 0x00 | (byte) FLAGS6502.U;
+
+		addrs_abs = 0xFFFC;
+		var lo = Read((ushort)(addrs_abs + 0));
+		var hi = Read((ushort)(addrs_abs + 1));
+
+		programCounter = (byte)((hi << 8) | lo);
+
+		addrs_rel = 0x0000;
+		addrs_abs = 0x0000;
+		Fetched = 0x00;
+
+		Cycles = 8;
+
+		return Task.CompletedTask;
+	}
+
+	public virtual Task InteruptRequestSignal()
+	{
+		if (GetFlag(FLAGS6502.I) == 0)
+		{
+			Write((byte)(0x0100 + stackPointer), (byte)((programCounter >> 8) & 0x00FF));
+			stackPointer--;
+			Write((byte)(0x0100 + stackPointer), (byte)(programCounter & 0x00FF));
+			stackPointer--;
+			
+			SetFlag(FLAGS6502.B, false);
+			SetFlag(FLAGS6502.U, true);
+			SetFlag(FLAGS6502.I, true);
+			Write((byte)(0x0100 + stackPointer), status);
+			stackPointer--;
+
+			addrs_abs = 0xFFFE;
+			var lo = Read((ushort)(addrs_abs + 0));
+			var hi = Read((ushort)(addrs_abs + 1));
+			programCounter = (byte)((hi << 8) | lo);
+
+			Cycles = 7;
+		}	
+		
+		return Task.CompletedTask;
+	}
+	
+	public virtual Task NonMaskableInteruptRequestSignal()	
+	{
+		Write((byte)(0x0100 + stackPointer), (byte)((programCounter >> 8) & 0x00FF));
+		stackPointer--;
+		Write((byte)(0x0100 + stackPointer), (byte)(programCounter & 0x00FF));
+		stackPointer--;
+			
+		SetFlag(FLAGS6502.B, false);
+		SetFlag(FLAGS6502.U, true);
+		SetFlag(FLAGS6502.I, true);
+		Write((byte)(0x0100 + stackPointer), status);
+		stackPointer--;
+
+		addrs_abs = 0xFFFA;
+		var lo = Read((ushort)(addrs_abs + 0));
+		var hi = Read((ushort)(addrs_abs + 1));
+		programCounter = (byte)((hi << 8) | lo);
+
+		Cycles = 7;
+
+		return Task.CompletedTask;
+	}
 	public virtual byte Fetch()
     {
         if (!(lookup[OprogramCounterode].AddressMode == IMP)){
@@ -168,7 +236,7 @@ public abstract class olc6502 : Registers, ICpuOpCodes, ICpuAddressingModes
         addrs_rel = Read(programCounter);
         programCounter++;
 
-        if(addrs_rel & 0x80){
+        if((addrs_rel & 0x80) == 1){
             addrs_rel |= 0xFF00;            
         }
 
@@ -281,7 +349,7 @@ public byte ADC()
 	
 	// Add is performed in 16-bit domain for emulation to capture any
 	// carry bit, which will exist in bit 8 of the 16-bit word
-	var temp = (UInt16)a + (UInt16)Fetched + (UInt16)GetFlag(C);
+	var temp = a + Fetched + GetFlag(FLAGS6502.C);
 	
 	// The carry flag out exists in the high byte bit 0
 	SetFlag(FLAGS6502.C, temp > 255);
@@ -290,13 +358,13 @@ public byte ADC()
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0);
 	
 	// The signed Overflow flag is set based on all that up there! :D
-	SetFlag(FLAGS6502.V, (~((UInt16)a ^ (UInt16)Fetched) & ((UInt16)a ^ (UInt16)temp)) & 0x0080);
+	SetFlag(FLAGS6502.V, ((~(a ^ Fetched) & (a ^ (UInt16)temp)) & 0x0080) == 1);
 	
 	// The negative flag is set to the most significant bit of the result
-	SetFlag(FLAGS6502.N, temp & 0x80);
+	SetFlag(FLAGS6502.N, (temp & 0x80) == 1);
 	
 	// Load the result into the accumulator (it's 8-bit dont forget!)
-	a = temp & 0x00FF;
+	a = (byte)(temp & 0x00FF);
 	
 	// This instruction has the potential to require an additional clock cycle
 	return 1;
@@ -340,12 +408,12 @@ public byte BCC()
 	if (GetFlag(FLAGS6502.C) == 0)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 		
 		if((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 		
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -355,12 +423,12 @@ public byte BCS()
 	if (GetFlag(FLAGS6502.C) == 1)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -370,12 +438,12 @@ public byte BEQ()
 	if (GetFlag(FLAGS6502.Z) == 1)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs =(ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -385,22 +453,22 @@ public byte BIT()
 	Fetch();
 	var temp = a & Fetched;
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x00);
-	SetFlag(FLAGS6502.N, Fetched & (1 << 7));
-	SetFlag(FLAGS6502.V, Fetched & (1 << 6));
+	SetFlag(FLAGS6502.N, (Fetched & (1 << 7)) == 1);
+	SetFlag(FLAGS6502.V, (Fetched & (1 << 6)) == 1);
 	return 0;
 }
 
 public byte BMI()
 {
-	if (GetFlag(N) == 1)
+	if (GetFlag(FLAGS6502.N) == 1)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -410,12 +478,12 @@ public byte BNE()
 	if (GetFlag(FLAGS6502.Z) == 0)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -425,12 +493,12 @@ public byte BPL()
 	if (GetFlag(FLAGS6502.N) == 0)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -459,12 +527,12 @@ public byte BVC()
 	if (GetFlag(FLAGS6502.V) == 0)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -474,12 +542,12 @@ public byte BVS()
 	if (GetFlag(FLAGS6502.V) == 1)
 	{
 		Cycles++;
-		addrs_abs = programCounter + addrs_rel;
+		addrs_abs = (ushort)(programCounter + addrs_rel);
 
 		if ((addrs_abs & 0xFF00) != (programCounter & 0xFF00))
 			Cycles++;
 
-		programCounter = addrs_abs;
+		programCounter = (byte)addrs_abs;
 	}
 	return 0;
 }
@@ -525,7 +593,7 @@ public byte CMP()
 	var temp = (UInt16)a - (UInt16)Fetched;
 	SetFlag(FLAGS6502.C, a >= Fetched);
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	return 1;
 }
 
@@ -539,7 +607,7 @@ public byte CPX()
 	var temp = (UInt16)x - (UInt16)Fetched;
 	SetFlag(FLAGS6502.C, x >= Fetched);
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	return 0;
 }
 
@@ -553,7 +621,7 @@ public byte CPY()
 	var temp = (UInt16)y - (UInt16)Fetched;
 	SetFlag(FLAGS6502.C, y >= Fetched);
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	return 0;
 }
 
@@ -565,9 +633,9 @@ public byte DEC()
 {
 	Fetch();
 	var temp = Fetched - 1;
-	Write(addrs_abs, temp & 0x00FF);
+	Write(addrs_abs, (byte)(temp & 0x00FF));
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	return 0;
 }
 
@@ -579,7 +647,7 @@ public byte DEX()
 {
 	x--;
 	SetFlag(FLAGS6502.Z, x == 0x00);
-	SetFlag(FLAGS6502.N, x & 0x80);
+	SetFlag(FLAGS6502.N, (x & 0x80) == 1);
 	return 0;
 }
 
@@ -591,7 +659,7 @@ public byte DEY()
 {
 	y--;
 	SetFlag(FLAGS6502.Z, y == 0x00);
-	SetFlag(FLAGS6502.N, y & 0x80);
+	SetFlag(FLAGS6502.N, (y & 0x80) == 1);
 	return 0;
 }
 
@@ -602,9 +670,9 @@ public byte DEY()
 public byte EOR()
 {
 	Fetch();
-	a = a ^ Fetched;	
+	a = (byte)(a ^ Fetched);	
 	SetFlag(FLAGS6502.Z, a == 0x00);
-	SetFlag(FLAGS6502.N, a & 0x80);
+	SetFlag(FLAGS6502.N, (a & 0x80) == 1);
 	return 1;
 }
 
@@ -616,9 +684,9 @@ public byte INC()
 {
 	Fetch();
 	var temp = Fetched + 1;
-	Write(addrs_abs, temp & 0x00FF);
+	Write(addrs_abs, (byte)(temp & 0x00FF));
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	return 0;
 }
 
@@ -630,7 +698,7 @@ public byte INX()
 {
 	x++;
 	SetFlag(FLAGS6502.Z, x == 0x00);
-	SetFlag(FLAGS6502.N, x & 0x80);
+	SetFlag(FLAGS6502.N, (x & 0x80) == 1);
 	return 0;
 }
 
@@ -642,7 +710,7 @@ public byte INY()
 {
 	y++;
 	SetFlag(FLAGS6502.Z, y == 0x00);
-	SetFlag(FLAGS6502.N, y & 0x80);
+	SetFlag(FLAGS6502.N, (y & 0x80) == 1);
 	return 0;
 }
 
@@ -651,7 +719,7 @@ public byte INY()
 // Function:    programCounter = address
 public byte JMP()
 {
-	programCounter = addrs_abs;
+	programCounter = (byte)addrs_abs;
 	return 0;
 }
 
@@ -662,12 +730,12 @@ public byte JSR()
 {
 	programCounter--;
 
-	Write(0x0100 + stackPointer, (programCounter >> 8) & 0x00FF);
+	Write((ushort)(0x0100 + stackPointer), (byte)((programCounter >> 8) & 0x00FF));
 	stackPointer--;
-	Write(0x0100 + stackPointer, programCounter & 0x00FF);
+	Write((ushort)(0x0100 + stackPointer), (byte)(programCounter & 0x00FF));
 	stackPointer--;
 
-	programCounter = addrs_abs;
+	programCounter = (byte)addrs_abs;
 	return 0;
 }
 
@@ -680,7 +748,7 @@ public byte LDA()
 	Fetch();
 	a = Fetched;
 	SetFlag(FLAGS6502.Z, a == 0x00);
-	SetFlag(FLAGS6502.N, a & 0x80);
+	SetFlag(FLAGS6502.N, (a & 0x80) == 1);
 	return 1;
 }
 
@@ -693,7 +761,7 @@ public byte LDX()
 	Fetch();
 	x = Fetched;
 	SetFlag(FLAGS6502.Z, x == 0x00);
-	SetFlag(FLAGS6502.N, x & 0x80);
+	SetFlag(FLAGS6502.N, (x & 0x80) == 1);
 	return 1;
 }
 
@@ -706,21 +774,21 @@ public byte LDY()
 	Fetch();
 	y = Fetched;
 	SetFlag(FLAGS6502.Z, y == 0x00);
-	SetFlag(FLAGS6502.N, y & 0x80);
+	SetFlag(FLAGS6502.N, (y & 0x80) == 1);
 	return 1;
 }
 
 public byte LSR()
 {
 	Fetch();
-	SetFlag(FLAGS6502.C, Fetched & 0x0001);
+	SetFlag(FLAGS6502.C, (Fetched & 0x0001) == 1);
 	var temp = Fetched >> 1;	
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
-	if (lookup[OprogramCounterode].addrmode == &olc6502::IMP)
-		a = temp & 0x00FF;
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
+	if (lookup[OprogramCounterode].AddressMode == IMP)
+		a = (byte)(temp & 0x00FF);
 	else
-		Write(addrs_abs, temp & 0x00FF);
+		Write(addrs_abs, (byte)(temp & 0x00FF));
 	return 0;
 }
 
@@ -746,9 +814,9 @@ public byte NOP()
 public byte ORA()
 {
 	Fetch();
-	a = a | Fetched;
+	a = (byte)(a | Fetched);
 	SetFlag(FLAGS6502.Z, a == 0x00);
-	SetFlag(FLAGS6502.N, a & 0x80);
+	SetFlag(FLAGS6502.N, (a & 0x80) == 1);
 	return 1;
 }
 
@@ -757,7 +825,7 @@ public byte ORA()
 // Function:    A -> stack
 public byte PHA()
 {
-	Write(0x0100 + stackPointer, a);
+	Write((ushort)(0x0100 + stackPointer), a);
 	stackPointer--;
 	return 0;
 }
@@ -768,7 +836,7 @@ public byte PHA()
 // Note:        Break flag is set to 1 before push
 public byte PHP()
 {
-	Write(0x0100 + stackPointer, status | B | U);
+	Write((ushort)(0x0100 + stackPointer), (byte)(status | (byte)FLAGS6502.B | (byte)FLAGS6502.U));
 	SetFlag(FLAGS6502.B, false);
 	SetFlag(FLAGS6502.U, false);
 	stackPointer--;
@@ -782,9 +850,9 @@ public byte PHP()
 public byte PLA()
 {
 	stackPointer++;
-	a = Read(0x0100 + stackPointer);
+	a = Read((ushort)(0x0100 + stackPointer));
 	SetFlag(FLAGS6502.Z, a == 0x00);
-	SetFlag(FLAGS6502.N, a & 0x80);
+	SetFlag(FLAGS6502.N, (a & 0x80) == 1);
 	return 0;
 }
 
@@ -794,8 +862,8 @@ public byte PLA()
 public byte PLP()
 {
 	stackPointer++;
-	status = Read(0x0100 + stackPointer);
-	SetFlag(FLAGS6502.U, 1);
+	status = Read((ushort)(0x0100 + stackPointer));
+	SetFlag(FLAGS6502.U, true);
 	return 0;
 }
 
@@ -807,9 +875,9 @@ public byte ROL()
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x0000);
 	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	if (lookup[OprogramCounterode].AddressMode == IMP)
-		a = temp & 0x00FF;
+		a = (byte)(temp & 0x00FF);
 	else
-		Write(addrs_abs, temp & 0x00FF);
+		Write(addrs_abs, (byte)(temp & 0x00FF));
 	return 0;
 }
 
@@ -819,20 +887,20 @@ public byte ROR()
 	var temp = (UInt16)(GetFlag(FLAGS6502.C) << 7) | (Fetched >> 1);
 	SetFlag(FLAGS6502.C, (Fetched & 0x01) == 1);
 	SetFlag(FLAGS6502.Z, (temp & 0x00FF) == 0x00);
-	SetFlag(FLAGS6502.N, temp & 0x0080);
+	SetFlag(FLAGS6502.N, (temp & 0x0080) == 1);
 	if (lookup[OprogramCounterode].AddressMode == IMP)
-		a = temp & 0x00FF;
+		a = (byte)(temp & 0x00FF);
 	else
-		Write(addrs_abs, temp & 0x00FF);
+		Write(addrs_abs, (byte)(temp & 0x00FF));
 	return 0;
 }
 
 public byte RTI()
 {
 	stackPointer++;
-	status = Read(0x0100 + stackPointer);
-	status &= ~FLAGS6502.B;
-	status &= ~FLAGS6502.U;
+	status = Read((ushort)(0x0100 + stackPointer));
+	status &= (byte)~FLAGS6502.B;
+	status &= (byte)~FLAGS6502.U;
 
 	stackPointer++;
 	programCounter = (byte)Read((ushort)(0x0100 + stackPointer));
