@@ -3,3 +3,14 @@ C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.GeneratedMSBui
 C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.AssemblyInfoInputs.cache
 C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.AssemblyInfo.cs
 C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.csproj.CoreCompileInputs.cache
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.exe
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.deps.json
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.runtimeconfig.json
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.runtimeconfig.dev.json
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.dll
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\ref\NES emulator.dll
+C:\Users\stefa\Desktop\NES emulator\bin\Debug\net5.0\NES emulator.pdb
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.dll
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\ref\NES emulator.dll
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.pdb
+C:\Users\stefa\Desktop\NES emulator\obj\Debug\net5.0\NES emulator.genruntimeconfig.cache

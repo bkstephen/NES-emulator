@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "EcxaXdJHyP7gVMitfaFiFL3Mq+7YKRiwzi875mp2L3pXm28QRWlSZCgj8U1pIqmJwBouzd0N/A5t1tt6L30f4Q==",
+  "dgSpecHash": "XOWS13I+q6xFFq0vVq+1BQIVAaYAJInt/GycFBBX9hwjRlMUTwHQjg67vs/ildgEKihnSkM9Bjs2j6tNlgoqWA==",
   "success": true,
-  "projectFilePath": "C:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
+  "projectFilePath": "c:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

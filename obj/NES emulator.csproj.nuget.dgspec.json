@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj": {}
+    "c:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj": {}
   },
   "projects": {
-    "C:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj": {
+    "c:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
+        "projectUniqueName": "c:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
         "projectName": "NES emulator",
-        "projectPath": "C:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
+        "projectPath": "c:\\Users\\stefa\\Desktop\\NES emulator\\NES emulator.csproj",
         "packagesPath": "C:\\Users\\stefa\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\stefa\\Desktop\\NES emulator\\obj\\",
+        "outputPath": "c:\\Users\\stefa\\Desktop\\NES emulator\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Microsoft\\Xamarin\\NuGet",
+          "C:\\Microsoft\\Xamarin\\NuGet\\",
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
         ],
         "configFilePaths": [
@@ -23,7 +23,7 @@
           "C:\\Program Files (x86)\\NuGet\\Config\\Xamarin.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net50"
+          "net5.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
@@ -32,7 +32,8 @@
           "https://pkgs.dev.azure.com/bpcgr/_packaging/BPC_Packages%40Local/nuget/v3/index.json": {}
         },
         "frameworks": {
-          "netcoreapp5.0": {
+          "net5.0": {
+            "targetAlias": "net5.0",
             "projectReferences": {}
           }
         },
@@ -43,7 +44,8 @@
         }
       },
       "frameworks": {
-        "netcoreapp5.0": {
+        "net5.0": {
+          "targetAlias": "net5.0",
           "imports": [
             "net461",
             "net462",

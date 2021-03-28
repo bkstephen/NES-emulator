@@ -7,14 +7,18 @@ public class Bus
 {
     private static int RAM_length_rows = 64;
     private static  int RAM_length_columns = 1024;
-    
-    private olc6502 CPU { get; set; }
-    private byte[] RAM { get; set; } = new byte[RAM_length_rows * RAM_length_columns];
+
+    public olc6502 CPU { get; set; } = new olc6502();
+    public byte[] RAM { get; set; } = new byte[RAM_length_rows * RAM_length_columns];
     
 
     public Bus()
     {       
         CleanRAM();
+    }
+    
+    public void Connect()
+    {
         CPU.ConnectBus(this);
     }
 

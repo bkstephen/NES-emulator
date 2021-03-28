@@ -1,6 +1,6 @@
 namespace NES_emulator.components.common
 {
-    public abstract class Registers
+    public class Registers
     {
         public byte a { get; set; } = 0x00;
         public byte x { get; set; } = 0x00;
